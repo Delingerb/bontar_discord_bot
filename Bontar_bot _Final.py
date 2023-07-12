@@ -173,7 +173,7 @@ async def horas(ctx:SlashContext):
     required=True,
     opt_type=OptionType.STRING
 )
-async def server_info_function(ctx: SlashContext, server_opt: str):
+async def my_command_function(ctx: SlashContext, server_opt: str):
     server_opt_capitalized = server_opt.capitalize()  # Convertir la primera letra a mayúscula
 
     world_info = get_world_info(server_opt_capitalized)
