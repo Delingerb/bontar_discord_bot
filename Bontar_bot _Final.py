@@ -1,9 +1,9 @@
-from interactions import Client, Intents, listen,Embed, slash_command, SlashContext, slash_option, OptionType
+import math
+import pytz
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
-import pytz
-
+from interactions import Client, Intents, listen,Embed, slash_command, SlashContext, slash_option, OptionType
 
 
 bot = Client(intents=Intents.DEFAULT)
@@ -30,8 +30,6 @@ hora_ecuador = obtener_hora('America/Guayaquil')
 hora_mex = obtener_hora('America/Mexico_City')
 hora_usa1 = obtener_hora('America/New_York') 
 hora_espana = obtener_hora('Europe/Madrid') 
-
-
 #HORARIOS/
 
 
@@ -79,7 +77,7 @@ toserversave = f"{remaining_hours:02d}:{remaining_minutes:02d}"
 
 #TIBIADROME
 current_date = datetime.utcnow()
-remaining_days = (2 - current_date.weekday()) % 7
+remaining_days = (2 - current_date.weekday()) % 14
 target_date = current_date + timedelta(days=remaining_days)
 target_date = target_date.replace(hour=8, minute=0, second=0, microsecond=0)
 remaining_time = target_date - current_date
@@ -131,13 +129,16 @@ def calculate_exp(current_lvl, desired_lvl):
     formatted_experience = "{:,}".format(total_experience)
     message = f"To level up from {current_lvl} to {desired_lvl}, you need **{formatted_experience}** experience points."
     return message
-
-# Usage example
-#current_lvl = 50
-#desired_lvl = 100
-#result = calculate_exp(current_lvl, desired_lvl)
-
 #CALCULATE EXP/
+
+##PARTY_SHARE
+def party_share(user_level):
+    minimum_level = math.ceil(user_level * (2/3))
+    maximum_level = math.ceil(user_level * (3/2))
+
+    message = f"A level {user_level} can share experience with levels {minimum_level} to {maximum_level}."
+    return message
+##PARTY_SHARE/
 
 
 
@@ -147,7 +148,7 @@ def calculate_exp(current_lvl, desired_lvl):
 @listen()  # this decorator tells snek that it needs to listen for the corresponding event, and run this coroutine
 async def on_ready():
     # This event is called when the bot is ready to respond to commands
-    print("Ready")
+    print("Ready_Last")
     print(f"This bot is owned by {bot.owner}")
 
 
@@ -158,9 +159,9 @@ async def hola_test(ctx: SlashContext):
 @slash_command(name="boss", description="Boss Boosted del día.")
 async def boss(ctx:SlashContext):
     embed = Embed(title= boss_name,
-                  url="https://tibia.fandom.com/wiki/" + boss_name.replace(" ", "_"),
+                url="https://tibia.fandom.com/wiki/" + boss_name.replace(" ", "_"),
                   description="**Vida**: "+ hp_value + "\n" + " **Experiencia**: " + exp_value,
-                  color="#ffffff")
+                color="#ffffff")
     embed.set_thumbnail(url= boss_img)
     embed.set_footer(text="Cambia al siguiente server save en " + toserversave + ".")
     await ctx.send(embed=embed)
@@ -172,9 +173,9 @@ async def toservers(ctx: SlashContext):
 @slash_command(name="drome", description="Rotación Tibia Drome")
 async def tibiadrome(ctx:SlashContext):
     embed = Embed(title= "Tibia Drome",
-                  url="https://tibia.fandom.com/wiki/Tibiadrome#Rewards",
-                  description= "**NEXT**:" + "\n" +"Siguiente rotación en " + time_drome_left + "." + "\n" + "**Reward**:" + "\n" + "Potions especiales, puntos para Mount y Outfit",
-                  color="#ffffff")
+                url="https://tibia.fandom.com/wiki/Tibiadrome#Rewards",
+                description= "**NEXT**:" + "\n" +"Siguiente rotación en " + time_drome_left + "." + "\n" + "**Reward**:" + "\n" + "Potions especiales, puntos para Mount y Outfit",
+                color="#ffffff")
     embed.set_thumbnail(url= "https://static.wikia.nocookie.net/tibia/images/f/f9/Outfit_Lion_of_War_Female_Addon_3.gif/revision/latest?cb=20190522035213&path-prefix=en&format=original")
     await ctx.send(embed=embed)
 
@@ -201,7 +202,7 @@ async def horas(ctx:SlashContext):
     required=True,
     opt_type=OptionType.STRING
 )
-async def my_command_function(ctx: SlashContext, server_opt: str):
+async def world_info(ctx: SlashContext, server_opt: str):
     server_opt_capitalized = server_opt.capitalize()  # Convertir la primera letra a mayúscula
 
     world_info = get_world_info(server_opt_capitalized)
@@ -218,7 +219,7 @@ async def my_command_function(ctx: SlashContext, server_opt: str):
         await ctx.send(f"Failed to fetch data for the world '{server_opt_capitalized}'.")
 
 
-@slash_command(name="tolvl", description="Experience required for desired level")
+@slash_command(name="tolvl2", description="Experience required for desired level")
 @slash_option(
     name="current_lvl",
     description="current Level",
@@ -232,8 +233,7 @@ async def my_command_function(ctx: SlashContext, server_opt: str):
     opt_type=OptionType.INTEGER
 )
 
-
-async def my_command_function(ctx: SlashContext, current_lvl: int, desired_lvl: int):
+async def to_lvl_function(ctx: SlashContext, current_lvl: int, desired_lvl: int):
     
     if current_lvl >= desired_lvl:
         await ctx.send("**Warning:** The current level must be lower than the desired level.")
@@ -243,6 +243,18 @@ async def my_command_function(ctx: SlashContext, current_lvl: int, desired_lvl: 
         await ctx.send(exp_required)
     
 
+@slash_command(name="share", description="Party Share")
+@slash_option(
+    name="level",
+    description="current Level",
+    required=True,
+    opt_type=OptionType.INTEGER
+)
+
+async def share_lvl_function(ctx: SlashContext, level: int):
+    
+        party_result = party_share(level)    
+        await ctx.send(party_result)
 
 
 

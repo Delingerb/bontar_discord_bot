@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 
 current_date = datetime.utcnow()
-remaining_days = (2 - current_date.weekday()) % 7
+remaining_days = (2 - current_date.weekday()) % 14
 target_date = current_date + timedelta(days=remaining_days)
 target_date = target_date.replace(hour=8, minute=0, second=0, microsecond=0)
 remaining_time = target_date - current_date

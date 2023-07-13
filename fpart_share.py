@@ -1,6 +1,6 @@
 import math
 
-def calculate_min_max_levels(user_level):
+def party_share(user_level):
     minimum_level = math.ceil(user_level * (2/3))
     maximum_level = math.ceil(user_level * (3/2))
 
@@ -9,5 +9,5 @@ def calculate_min_max_levels(user_level):
 
 # Ejemplo de uso
 user_level = int(input("Ingresa el nivel del usuario: "))
-result_message = calculate_min_max_levels(user_level)
+result_message = party_share(user_level)
 print(result_message)

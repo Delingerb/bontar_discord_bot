@@ -1,9 +1,9 @@
-from interactions import Client, Intents, Embed, listen, OptionType, slash_command, SlashContext, slash_option
+import math
+import pytz
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
-import pytz
-
+from interactions import Client, Intents, listen,Embed, slash_command, SlashContext, slash_option, OptionType
 
 
 bot = Client(intents=Intents.DEFAULT)
@@ -90,7 +90,7 @@ time_drome_left = f"{days} days {remaining_hours:02d}:{remaining_minutes:02d}"
 #TIBIADROME/
 
 
-##SERVERINFO
+##SERVER_INFO
 def get_worlds():
     url = 'https://api.tibiadata.com/v3/worlds'
     response = requests.get(url)
@@ -111,30 +111,57 @@ def get_world_info(world_name):
                 return world
     
     return None
-##SERVERINFO/
+##SERVER_INFO/
+
+
+#CALCULATE EXP
+def calculate_exp(current_lvl, desired_lvl):
+    total_experience = 0
+
+    if current_lvl >= desired_lvl:
+        message = "Warning: The current level must be lower than the desired level."
+        return message
+
+    for level in range(current_lvl, desired_lvl):
+        level_experience = 50 * level ** 2 - 150 * level + 200
+        total_experience += level_experience
+
+    formatted_experience = "{:,}".format(total_experience)
+    message = f"To level up from {current_lvl} to {desired_lvl}, you need **{formatted_experience}** experience points."
+    return message
+#CALCULATE EXP/
+
+##PARTY_SHARE
+def party_share(user_level):
+    minimum_level = math.ceil(user_level * (2/3))
+    maximum_level = math.ceil(user_level * (3/2))
+
+    message = f"A level {user_level} can share experience with levels {minimum_level} to {maximum_level}."
+    return message
+##PARTY_SHARE/
 
 
 
 
 
-##COMMANDS
+
 @listen()  # this decorator tells snek that it needs to listen for the corresponding event, and run this coroutine
 async def on_ready():
     # This event is called when the bot is ready to respond to commands
-    print("Ready")
+    print("Ready_alfa")
     print(f"This bot is owned by {bot.owner}")
 
 
-@slash_command(name="hola", description="My first command :)")
-async def function_test(ctx: SlashContext):
+@slash_command(name="hola_alfa", description="My first command :)")
+async def hola_test(ctx: SlashContext):
     await ctx.send("Hello todo bien?")
 
 @slash_command(name="boss", description="Boss Boosted del día.")
 async def boss(ctx:SlashContext):
     embed = Embed(title= boss_name,
-                  url="https://tibia.fandom.com/wiki/" + boss_name.replace(" ", "_"),
+                url="https://tibia.fandom.com/wiki/" + boss_name.replace(" ", "_"),
                   description="**Vida**: "+ hp_value + "\n" + " **Experiencia**: " + exp_value,
-                  color="#ffffff")
+                color="#ffffff")
     embed.set_thumbnail(url= boss_img)
     embed.set_footer(text="Cambia al siguiente server save en " + toserversave + ".")
     await ctx.send(embed=embed)
@@ -146,9 +173,9 @@ async def toservers(ctx: SlashContext):
 @slash_command(name="drome", description="Rotación Tibia Drome")
 async def tibiadrome(ctx:SlashContext):
     embed = Embed(title= "Tibia Drome",
-                  url="https://tibia.fandom.com/wiki/Tibiadrome#Rewards",
-                  description= "**NEXT**:" + "\n" +"Siguiente rotación en " + time_drome_left + "." + "\n" + "**Reward**:" + "\n" + "Potions especiales, puntos para Mount y Outfit",
-                  color="#ffffff")
+                url="https://tibia.fandom.com/wiki/Tibiadrome#Rewards",
+                description= "**NEXT**:" + "\n" +"Siguiente rotación en " + time_drome_left + "." + "\n" + "**Reward**:" + "\n" + "Potions especiales, puntos para Mount y Outfit",
+                color="#ffffff")
     embed.set_thumbnail(url= "https://static.wikia.nocookie.net/tibia/images/f/f9/Outfit_Lion_of_War_Female_Addon_3.gif/revision/latest?cb=20190522035213&path-prefix=en&format=original")
     await ctx.send(embed=embed)
 
@@ -167,14 +194,15 @@ async def horas(ctx:SlashContext):
     await ctx.send(embed=embed)
     
     
-@slash_command(name="world5", description="Server Info")
+    
+@slash_command(name="world", description="Server Info")
 @slash_option(
     name="server_opt",
     description="String Option",
     required=True,
     opt_type=OptionType.STRING
 )
-async def my_command_function(ctx: SlashContext, server_opt: str):
+async def world_info(ctx: SlashContext, server_opt: str):
     server_opt_capitalized = server_opt.capitalize()  # Convertir la primera letra a mayúscula
 
     world_info = get_world_info(server_opt_capitalized)
@@ -183,43 +211,15 @@ async def my_command_function(ctx: SlashContext, server_opt: str):
         name = world_info['name']
         status = world_info['status']
         players_online = world_info['players_online']
+        location = world_info['location']
+        pvp_type = world_info['pvp_type']
         
-        await ctx.send(f"World Name: {name}\nStatus: {status}\nPlayers online: {players_online}")
+        await ctx.send(f"World Name: {name}\nPVP: {pvp_type}\nStatus: {status}\nLocation: {location}\nPlayers online: {players_online}")
     else:
-        await ctx.send(f"Failed to fetch data for the world '{server_opt_capitalized}'.")    
-    
-    
-#testing
-
-##FUNCTION
-def calculate_exp(current_lvl, desired_lvl):
-    total_experience = 0
-
-    if current_lvl >= desired_lvl:
-        message = "Warning: The current level must be lower than the desired level."
-        return message
-
-    for level in range(current_lvl, desired_lvl):
-        level_experience = 50 * level ** 2 - 150 * level + 200
-        total_experience += level_experience
-
-    formatted_experience = "{:,}".format(total_experience)
-    message = f"To level up from {current_lvl} to {desired_lvl}, you need **{formatted_experience}** experience points."
-    return message
-
-# Usage example
-current_lvl = 50
-desired_lvl = 100
-
-result = calculate_exp(current_lvl, desired_lvl)
-# Usage example
+        await ctx.send(f"Failed to fetch data for the world '{server_opt_capitalized}'.")
 
 
-
-##command
-
-
-@slash_command(name="tolvl", description="Experience required for desired level")
+@slash_command(name="tolvl2", description="Experience required for desired level")
 @slash_option(
     name="current_lvl",
     description="current Level",
@@ -233,8 +233,7 @@ result = calculate_exp(current_lvl, desired_lvl)
     opt_type=OptionType.INTEGER
 )
 
-
-async def my_command_function(ctx: SlashContext, current_lvl: int, desired_lvl: int):
+async def to_lvl_function(ctx: SlashContext, current_lvl: int, desired_lvl: int):
     
     if current_lvl >= desired_lvl:
         await ctx.send("**Warning:** The current level must be lower than the desired level.")
@@ -243,8 +242,22 @@ async def my_command_function(ctx: SlashContext, current_lvl: int, desired_lvl: 
         exp_required = calculate_exp(current_lvl, desired_lvl)    
         await ctx.send(exp_required)
     
-    
 
+@slash_command(name="share", description="Party Share")
+@slash_option(
+    name="level",
+    description="current Level",
+    required=True,
+    opt_type=OptionType.INTEGER
+)
+
+async def share_lvl_function(ctx: SlashContext, level: int):
+    
+        party_result = party_share(level)    
+        await ctx.send(party_result)
+
+
+#TESTING
 
 
 
