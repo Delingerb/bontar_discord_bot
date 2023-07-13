@@ -118,8 +118,6 @@ def get_world_info(world_name):
 
 
 ##COMMANDS
-
-
 @listen()  # this decorator tells snek that it needs to listen for the corresponding event, and run this coroutine
 async def on_ready():
     # This event is called when the bot is ready to respond to commands
@@ -191,6 +189,63 @@ async def my_command_function(ctx: SlashContext, server_opt: str):
         await ctx.send(f"Failed to fetch data for the world '{server_opt_capitalized}'.")    
     
     
+#testing
+
+##FUNCTION
+def calculate_exp(current_lvl, desired_lvl):
+    total_experience = 0
+
+    if current_lvl >= desired_lvl:
+        message = "Warning: The current level must be lower than the desired level."
+        return message
+
+    for level in range(current_lvl, desired_lvl):
+        level_experience = 50 * level ** 2 - 150 * level + 200
+        total_experience += level_experience
+
+    formatted_experience = "{:,}".format(total_experience)
+    message = f"To level up from {current_lvl} to {desired_lvl}, you need **{formatted_experience}** experience points."
+    return message
+
+# Usage example
+current_lvl = 50
+desired_lvl = 100
+
+result = calculate_exp(current_lvl, desired_lvl)
+# Usage example
+
+
+
+##command
+
+
+@slash_command(name="tolvl", description="Experience required for desired level")
+@slash_option(
+    name="current_lvl",
+    description="current Level",
+    required=True,
+    opt_type=OptionType.INTEGER
+)
+@slash_option(
+    name="desired_lvl",
+    description="desire Level",
+    required=True,
+    opt_type=OptionType.INTEGER
+)
+
+
+async def my_command_function(ctx: SlashContext, current_lvl: int, desired_lvl: int):
+    
+    if current_lvl >= desired_lvl:
+        await ctx.send("**Warning:** The current level must be lower than the desired level.")
+    
+    else:
+        exp_required = calculate_exp(current_lvl, desired_lvl)    
+        await ctx.send(exp_required)
+    
+    
+
+
 
 
 

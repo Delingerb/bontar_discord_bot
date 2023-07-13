@@ -1,59 +1,21 @@
-from interactions import Client, Intents, listen, OptionType, slash_command, SlashContext, slash_option
-import requests
+def calcular_experiencia(lvl_actual, lvl_deseado):
+    experiencia_total = 0
 
-bot = Client(intents=Intents.DEFAULT)
+    if lvl_actual >= lvl_deseado:
+        mensaje = "Advertencia: El nivel actual debe ser menor al nivel deseado."
+        return mensaje
 
-@listen()
-async def on_ready():
-    print("Ready")
-    print(f"This bot is owned by {bot.owner}")
+    for nivel in range(lvl_actual, lvl_deseado):
+        experiencia_nivel = 50 * nivel ** 2 - 150 * nivel + 200
+        experiencia_total += experiencia_nivel
 
-@slash_command(name="hola", description="My first command :)")
-async def my_hello(ctx: SlashContext):
-    await ctx.send("Hello, ¿todo bien?")
+    experiencia_formateada = "{:,}".format(experiencia_total)
+    mensaje = f"Para subir del nivel {lvl_actual} al nivel {lvl_deseado}, se necesitan {experiencia_formateada} puntos de experiencia."
+    return mensaje
 
-def get_worlds():
-    url = 'https://api.tibiadata.com/v3/worlds'
-    response = requests.get(url)
+# Ejemplo de uso
+lvl_actual = 59
+lvl_deseado = 60
 
-    if response.status_code == 200:
-        data = response.json()
-        worlds = data['worlds']['regular_worlds']
-        return worlds
-    else:
-        return None
-
-def get_world_info(world_name):
-    worlds = get_worlds()
-
-    if worlds:
-        for world in worlds:
-            if world['name'].lower() == world_name.lower():
-                return world
-    
-    return None
-
-@slash_command(name="world5", description="Server Info")
-@slash_option(
-    name="server_opt",
-    description="String Option",
-    required=True,
-    opt_type=OptionType.STRING
-)
-async def my_command_function(ctx: SlashContext, server_opt: str):
-    server_opt_capitalized = server_opt.capitalize()  # Convertir la primera letra a mayúscula
-
-    world_info = get_world_info(server_opt_capitalized)
-
-    if world_info and world_info.get('name') == server_opt_capitalized:
-        name = world_info['name']
-        status = world_info['status']
-        players_online = world_info['players_online']
-        
-        await ctx.send(f"World Name: {name}\nStatus: {status}\nPlayers online: {players_online}")
-    else:
-        await ctx.send(f"Failed to fetch data for the world '{server_opt_capitalized}'.")
-
-
-
-bot.start("MTEyNzQzMTk2NDU4MDkyMTM4NQ.Gf2sgN.wKl40sYpfZIRH8Q-PM8gxYWADvzV_vd3KtNkpE")
+resultado = calcular_experiencia(lvl_actual, lvl_deseado)
+print(resultado)
