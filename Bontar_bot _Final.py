@@ -1,15 +1,18 @@
 import math
 import pytz
+from pytz import utc
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
-from interactions import Client, Intents, listen,Embed, slash_command, SlashContext, slash_option, OptionType
+from interactions import Client, Intents, listen,Embed, slash_command, SlashContext, slash_option, OptionType, Task, TimeTrigger
 
 
 bot = Client(intents=Intents.DEFAULT)
-# intents are what events we want to receive from discord, `DEFAULT` is usually fine
+id_channel_publico = 793316701155885056 #Buntar_Publico
+role_id = "799964530301992961"  #Buntar
+role_buntar = f"<@&{role_id}>"
 
-api = "https://docs.tibiadata.com/"
+api = "https://api.tibiadata.com/v3/"
 
 
 
@@ -136,7 +139,7 @@ def party_share(user_level):
     minimum_level = math.ceil(user_level * (2/3))
     maximum_level = math.ceil(user_level * (3/2))
 
-    message = f"A level {user_level} can share experience with levels {minimum_level} to {maximum_level}."
+    message = f"A level **{user_level}** can share experience with levels **{minimum_level}** to **{maximum_level}**."
     return message
 ##PARTY_SHARE/
 
@@ -144,12 +147,6 @@ def party_share(user_level):
 
 
 
-
-@listen()  # this decorator tells snek that it needs to listen for the corresponding event, and run this coroutine
-async def on_ready():
-    # This event is called when the bot is ready to respond to commands
-    print("Ready_Last")
-    print(f"This bot is owned by {bot.owner}")
 
 
 @slash_command(name="hola", description="My first command :)")
@@ -198,7 +195,7 @@ async def horas(ctx:SlashContext):
 @slash_command(name="world", description="Server Info")
 @slash_option(
     name="server_opt",
-    description="String Option",
+    description="check server",
     required=True,
     opt_type=OptionType.STRING
 )
@@ -214,12 +211,12 @@ async def world_info(ctx: SlashContext, server_opt: str):
         location = world_info['location']
         pvp_type = world_info['pvp_type']
         
-        await ctx.send(f"World Name: {name}\nPVP: {pvp_type}\nStatus: {status}\nLocation: {location}\nPlayers online: {players_online}")
+        await ctx.send(f"World Name: **{name}**\nType: {pvp_type}\nStatus: {status}\nLocation: {location}\nPlayers online: {players_online}")
     else:
-        await ctx.send(f"Failed to fetch data for the world '{server_opt_capitalized}'.")
+        await ctx.send(f"**Wrong server name '{server_opt_capitalized}'.**")
 
 
-@slash_command(name="tolvl2", description="Experience required for desired level")
+@slash_command(name="tolvl", description="Experience required for desired level")
 @slash_option(
     name="current_lvl",
     description="current Level",
@@ -257,6 +254,59 @@ async def share_lvl_function(ctx: SlashContext, level: int):
         await ctx.send(party_result)
 
 
+def rashid_message():
+    day_of_week = datetime.now().strftime("%A")
+
+    rashid_monday = f"On Mondays you can find him in **Svargrond**\n in Dankwart's tavern, south of the temple."
+    rashid_tuesday = f"On Tuesdays you can find him in **Liberty Bay**\n in Lyonel's tavern, west of the depot."
+    rashid_wednesday = f"On Wednesdays you can find him in **Port Hope**\n in Clyde's tavern, west of the depot."
+    rashid_thursday = f"On Thursdays you can find him in **Ankrahmun**\n in Arito's tavern, above the post office."
+    rashid_friday = f"On Fridays you can find him in **Darashia**\n in Miraia's tavern, south of the guildhalls."
+    rashid_saturday = f"On Saturdays you can find him in **Edron**\n in Mirabell's tavern, above the depot."
+    rashid_sunday = f"On Sundays you can find him in **Carlin** depot\n one floor above."
+
+    if day_of_week == "Monday":
+        return rashid_monday
+    elif day_of_week == "Tuesday":
+        return rashid_tuesday
+    elif day_of_week == "Wednesday":
+        return rashid_wednesday
+    elif day_of_week == "Thursday":
+        return rashid_thursday
+    elif day_of_week == "Friday":
+        return rashid_friday
+    elif day_of_week == "Saturday":
+        return rashid_saturday
+    elif day_of_week == "Sunday":
+        return rashid_sunday
+    else:
+        return "Invalid day. Please provide a valid day of the week."
+
+
+@Task.create(TimeTrigger(hour=7, minute=57, utc=False))
+async def midnight():
+    global id_channel_publico
+    channel = bot.get_channel(id_channel_publico)  # Obtiene el objeto TextChannel
+    
+    rashid_day = rashid_message()
+
+    embed = Embed(title="Rashid",
+                url="https://tibia.fandom.com/wiki/Rashid",
+                description=rashid_day,
+                color="#00FF00") #verde
+    embed.set_thumbnail(url= "https://tibiapal.com/images/Rashid.gif")
+    await channel.send(embed=embed)
+    print("It's midnight!")
+
+
+@listen()  # this decorator tells snek that it needs to listen for the corresponding event, and run this coroutine
+async def on_ready():
+    # This event is called when the bot is ready to respond to commands
+    print("Ready_Last")
+    print(f"This bot is owned by {bot.owner}")
+    print(datetime.now().strftime("%H:%M:%S"))
+    print(datetime.now(utc).strftime("%H:%M:%S"))
+    midnight.start()
 
 #Token 
 bot.start("MTEyNzQzMTk2NDU4MDkyMTM4NQ.Gf2sgN.wKl40sYpfZIRH8Q-PM8gxYWADvzV_vd3KtNkpE")

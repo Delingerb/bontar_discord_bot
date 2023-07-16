@@ -3,8 +3,10 @@ import pytz
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
-from interactions import Client, Intents, listen,Embed, slash_command, SlashContext, slash_option, OptionType
-
+from interactions import Client, Intents 
+from interactions import listen,Embed, slash_command, SlashContext
+from interactions import slash_option, OptionType, Task, OrTrigger, TimeTrigger
+from interactions import IntervalTrigger
 
 bot = Client(intents=Intents.DEFAULT)
 # intents are what events we want to receive from discord, `DEFAULT` is usually fine
@@ -106,6 +108,12 @@ async def to_lvl_function(ctx: SlashContext, current_lvl: int, desired_lvl: int)
 
 
 ######TEST CON COMANDOS
+
+#from interactions import Task, IntervalTrigger
+
+@Task.create(IntervalTrigger(minutes=3))
+async def print_every_ten():
+    print("It's been 10 minutes!")
 
 
 

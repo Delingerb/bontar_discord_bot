@@ -1,13 +1,18 @@
-import math
+from datetime import datetime, timedelta
+from interactions import Client, Intents, listen, Embed, slash_command, SlashContext, slash_option, OptionType, IntervalTrigger, TimeTrigger, Task
 
-def calculate_min_max_levels(user_level):
-    minimum_level = math.ceil(user_level * (2/3))
-    maximum_level = math.ceil(user_level * (3/2))
+bot = Client(intents=Intents.DEFAULT)
+id_channel_publico = 793316701155885056 #Buntar_Publico
+role_id = "799964530301992961"  #Buntar
+role_buntar = f"<@&{role_id}>"
 
-    message = f"A level {user_level} can share experience with levels **{minimum_level}** to **{maximum_level}**."
-    return message
 
-# Ejemplo de uso
-user_level = int(input("Ingresa el nivel del usuario: "))
-result_message = calculate_min_max_levels(user_level)
-print(result_message)
+
+@listen()
+async def on_ready():
+    print(datetime.now().strftime("%H:%M:%S"))
+    print("Ready_Last")
+    
+
+# Iniciar el bot
+bot.start("MTEyNzQzMTk2NDU4MDkyMTM4NQ.Gf2sgN.wKl40sYpfZIRH8Q-PM8gxYWADvzV_vd3KtNkpE")
