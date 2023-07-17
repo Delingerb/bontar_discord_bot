@@ -20,14 +20,13 @@ async def hello_test(ctx: SlashContext):
     await ctx.send("Hello, how are you?")
 
 
-
-#TESTING
+####en prueba
 
 
 def get_filtered_bosses():
     selected_server = "Solidera"
     guild_url = f"https://guildstats.eu/bosses?world={selected_server}&monsterName=&bossType=&rook=0"
-    not_wanted = ['Apprentice Sheng', 'Munster', 'Teleskor', 'Rottie the Rotworm']
+    not_wanted = ['Apprentice Sheng', 'Munster', 'Teleskor', 'Rottie the Rotworm', 'Draptors']
     boss_name = 'man in the cave'
 
     response = requests.get(guild_url)
@@ -52,6 +51,7 @@ def get_filtered_bosses():
     data['Possibility'] = data['Possibility'].str.rstrip('%')
     data = data.convert_dtypes()
     data['Possibility'] = data['Possibility'].astype('float64')
+    data['Boss name'] = data['Boss name'].str.capitalize()
     filtered_data = data[data['Possibility'] >= 14.9]
     sorted_data = filtered_data.sort_values('Possibility', ascending=False)
 
@@ -73,13 +73,15 @@ async def boss_command(ctx: SlashContext):
 
 
 
-
-
 @listen()  # this decorator tells snek that it needs to listen for the corresponding event, and run this coroutine
 async def on_ready():
     # This event is called when the bot is ready to respond to commands
-    print("Ready")
+    print("Ready_Last")
     print(f"This bot is owned by {bot.owner}")
+    print(datetime.now().strftime("%H:%M:%S"))
+    print(datetime.now(utc).strftime("%H:%M:%S"))
+  
 
-# Iniciar el bot
+
+#Token 
 bot.start("MTEyNzQzMTk2NDU4MDkyMTM4NQ.Gf2sgN.wKl40sYpfZIRH8Q-PM8gxYWADvzV_vd3KtNkpE")

@@ -1,124 +1,86 @@
 import math
 import pytz
+from pytz import utc
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
-from interactions import Client, Intents 
-from interactions import listen,Embed, slash_command, SlashContext
-from interactions import slash_option, OptionType, Task, OrTrigger, TimeTrigger
-from interactions import IntervalTrigger
+from interactions import Client, Intents, listen,Embed, slash_command, SlashContext, slash_option, OptionType, Task, TimeTrigger
+import pandas as pd
+import requests
+from bs4 import BeautifulSoup
+
 
 bot = Client(intents=Intents.DEFAULT)
 # intents are what events we want to receive from discord, `DEFAULT` is usually fine
 
 api = "https://docs.tibiadata.com/"
 
+@slash_command(name="hello_test", description="My first command :)")
+async def hello_test(ctx: SlashContext):
+    await ctx.send("Hello, how are you?")
 
-#functions
-#CALCULATE EXP
-def calculate_exp(current_lvl, desired_lvl):
-    total_experience = 0
-
-    if current_lvl >= desired_lvl:
-        message = "Warning: The current level must be lower than the desired level."
-        return message
-
-    for level in range(current_lvl, desired_lvl):
-        level_experience = 50 * level ** 2 - 150 * level + 200
-        total_experience += level_experience
-
-    formatted_experience = "{:,}".format(total_experience)
-    message = f"To level up from {current_lvl} to {desired_lvl}, you need **{formatted_experience}** experience points."
-    return message
-#CALCULATE EXP/
-
-# Obtener el contenido HTML de la página web
-wikiurl = "https://tibia.fandom.com/wiki/Main_Page"
-response = requests.get(wikiurl)
-html_content = response.text
-
-# Crear un objeto BeautifulSoup para analizar el contenido HTML
-soup = BeautifulSoup(html_content, "html.parser")
-# Encontrar el elemento con la clase "compact-box compact-box-boss no-pseudoelements-container"
-elemento = soup.find("div", class_="compact-box compact-box-boss no-pseudoelements-container")
-# Obtener el título
-boss_name = elemento.find("b").text.strip()
-#Hp **************
-hp_span = elemento.find("span", class_="creature-stats-hp")
-hp_value = hp_span.find("span", class_="tibiatext").text
-# Exp******************
-exp_span = elemento.find("span", class_="creature-stats-exp")
-exp_value = exp_span.find("span", class_="tibiatext").text
-# obtener Imagen ******************
-image_span = elemento.find("span", class_="no-pseudoelements-container")
-boss_img = image_span.find("img")["data-src"]
+#TESTING
 
 
+def rare_bosses():
+    selected_server = "Solidera"
+    guild_url = f"https://guildstats.eu/bosses?world={selected_server}&monsterName=&bossType=&rook=0"
+    not_wanted = ['Apprentice Sheng', 'Munster', 'Teleskor', 'Rottie the Rotworm', 'draptors']
+    boss_name = 'man in the cave'
+
+    response = requests.get(guild_url)
+    html_content = response.text
+
+    soup = BeautifulSoup(html_content, "html.parser")
+    table = soup.find("table", id="myTable")
+
+    img_tag = soup.find("img", alt=boss_name)
+    if img_tag:
+        img_src = img_tag.get("src")
+        img_url = f"https://guildstats.eu/{img_src}"
+    else:
+        return f"No se encontró la imagen para el boss {boss_name}"
+
+    data = pd.read_html(str(table))[0]
+    data.columns = data.columns.droplevel(0)
+    data = data.drop(['Type', 'Introduced', 'Expected in', 'Killed bosses', 'Killed players', 'Last seen', '#', 'Image'], axis=1)
+    data = data[~data['Boss name'].isin(not_wanted)]
+    pattern = r'^\d+(\.\d+)?%'
+    data = data[data['Possibility'].str.extract(pattern, expand=False).notnull()]
+    data['Possibility'] = data['Possibility'].str.rstrip('%')
+    data = data.convert_dtypes()
+    data['Possibility'] = data['Possibility'].astype('float64')
+    data['Boss name'] = data['Boss name'].str.capitalize()
+    filtered_data = data[data['Possibility'] >= 14.9]
+    
+    sorted_data = filtered_data.sort_values('Possibility', ascending=False)
+
+    return sorted_data
+
+    
+@slash_command(name="rare_boss", description="probability rare bosses of the day")
+async def boss_command(ctx: SlashContext):
+    filtered_data = rare_bosses()
+
+    embed = Embed(title="Probability rare bosses of the day", 
+                color=0x6a93d5)
+
+    for _, row in filtered_data.iterrows():
+        boss_name = row['Boss name']
+        possibility = row['Possibility']
+        embed.add_field(name=boss_name, value=f"Chance: **{possibility}%**", inline=False)
+        
+    await ctx.send(embed=embed)
 
 
 
 @listen()  # this decorator tells snek that it needs to listen for the corresponding event, and run this coroutine
 async def on_ready():
     # This event is called when the bot is ready to respond to commands
-    print("Ready")
+    print("Ready papá")
     print(f"This bot is owned by {bot.owner}")
+    print(datetime.now().strftime("%H:%M:%S"))
+    print(datetime.now(utc).strftime("%H:%M:%S"))
 
-
-@slash_command(name="hola_test", description="My first command :)")
-async def hola_test(ctx: SlashContext):
-    await ctx.send("Hello todo bien?")
-
-@slash_command(name="boss", description="Boss Boosted del día.")
-async def boss(ctx:SlashContext):
-    embed = Embed(title= boss_name,
-                url="https://tibia.fandom.com/wiki/" + boss_name.replace(" ", "_"),
-                  description="**Vida**: "+ hp_value + "\n" + " **Experiencia**: " + exp_value,
-                color="#ffffff")
-    embed.set_thumbnail(url= boss_img)
-    embed.set_footer(text="Cambia al siguiente server save en " + toserversave + ".")
-    await ctx.send(embed=embed)
-
-
-
-@slash_command(name="tolvl2", description="Experience required for desired level")
-@slash_option(
-    name="current_lvl",
-    description="current Level",
-    required=True,
-    opt_type=OptionType.INTEGER
-)
-@slash_option(
-    name="desired_lvl",
-    description="desire Level",
-    required=True,
-    opt_type=OptionType.INTEGER
-)
-
-async def to_lvl_function(ctx: SlashContext, current_lvl: int, desired_lvl: int):
-    
-    if current_lvl >= desired_lvl:
-        await ctx.send("**Warning:** The current level must be lower than the desired level.")
-    
-    else:
-        exp_required = calculate_exp(current_lvl, desired_lvl)    
-        await ctx.send(exp_required)
-    
-
-
-
-
-######TEST CON COMANDOS
-
-#from interactions import Task, IntervalTrigger
-
-@Task.create(IntervalTrigger(minutes=3))
-async def print_every_ten():
-    print("It's been 10 minutes!")
-
-
-
-
-
-
-#Token 
+# Iniciar el bot
 bot.start("MTEyNzQzMTk2NDU4MDkyMTM4NQ.Gf2sgN.wKl40sYpfZIRH8Q-PM8gxYWADvzV_vd3KtNkpE")

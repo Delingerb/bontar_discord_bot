@@ -1,6 +1,13 @@
 {
     "cSpell.words": [
+        "Buntar",
+        "pseudoelements",
         "pytz",
-        "wikiurl"
-    ]
+        "serversave",
+        "tibiatext",
+        "wikiurl",
+        "ZIRH"
+    ],
+    "commentTranslate.targetLanguage": "en",
+    "commentTranslate.multiLineMerge": true
 }

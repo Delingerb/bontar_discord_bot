@@ -1,4 +1,4 @@
-from interactions import Client, Intents, listen,Task, TimeTrigger
+from interactions import Client, Intents, listen,Task, TimeTrigger, IntervalTrigger
 
 bot = Client(intents=Intents.DEFAULT)
 
