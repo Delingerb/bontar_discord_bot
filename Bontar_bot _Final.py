@@ -2,6 +2,7 @@ import math
 import pytz
 from pytz import utc
 import requests
+import random
 import pandas as pd
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
@@ -75,17 +76,20 @@ serversave_time = f"{remaining_hours:02d}:{remaining_minutes:02d}"
 # SERVER SAVE /
 
 # TIBIADROME
+# Definir la fecha objetivo para un miércoles específico
+target_date = datetime(2023, 7, 26, 8, 0)
 current_date = datetime.utcnow()
-remaining_days = (2 - current_date.weekday()) % 14
-target_date = current_date + timedelta(days=remaining_days)
-target_date = target_date.replace(hour=8, minute=0, second=0, microsecond=0)
 remaining_time = target_date - current_date
+
+if remaining_time.total_seconds() <= 0:
+    target_date += timedelta(days=14)
+    remaining_time = target_date - current_date
+
 days = remaining_time.days
 remaining_hours, remaining_seconds = divmod(remaining_time.seconds, 3600)
 remaining_minutes = remaining_seconds // 60
-if remaining_time.total_seconds() < 0:
-    days += 7
-tibiadrome_time_left = f"{days} days {remaining_hours:02d}:{remaining_minutes:02d}"
+
+next_drome = f"{days} days {remaining_hours:02d}:{remaining_minutes:02d}"
 # TIBIADROME /
 
 ## SERVER_INFO
@@ -166,7 +170,7 @@ async def toservers(ctx: SlashContext):
 async def tibiadrome(ctx: SlashContext):
     embed = Embed(title="Tibia Drome",
                   url="https://tibia.fandom.com/wiki/Tibiadrome#Rewards",
-                  description="**NEXT**:\nNext rotation in " + tibiadrome_time_left + ".\n**Reward**:\nSpecial potions, Mount and Outfit points.",
+                  description="**NEXT**:\nNext rotation in " + next_drome + ".\n**Reward**:\nSpecial potions, Mount and Outfit points.",
                   color="#ffffff")
     embed.set_thumbnail(url="https://static.wikia.nocookie.net/tibia/images/f/f9/Outfit_Lion_of_War_Female_Addon_3.gif/revision/latest?cb=20190522035213&path-prefix=en&format=original")
     await ctx.send(embed=embed)
@@ -293,7 +297,7 @@ async def midnight():
 def rare_bosses():
     selected_server = "Solidera"
     guild_url = f"https://guildstats.eu/bosses?world={selected_server}&monsterName=&bossType=&rook=0"
-    not_wanted = ['Apprentice Sheng', 'Munster', 'Teleskor', 'Rottie the Rotworm', 'draptors']
+    not_wanted = ['Apprentice Sheng', 'Munster', 'Teleskor', 'Rottie the Rotworm', 'draptors', 'undead cavebears', 'midnight panthers']
     boss_name = 'man in the cave'
 
     response = requests.get(guild_url)
@@ -316,29 +320,44 @@ def rare_bosses():
     pattern = r'^\d+(\.\d+)?%'
     data = data[data['Possibility'].str.extract(pattern, expand=False).notnull()]
     data['Possibility'] = data['Possibility'].str.rstrip('%')
-    data = data.convert_dtypes()
     data['Possibility'] = data['Possibility'].astype('float64')
-    data['Boss name'] = data['Boss name'].str.capitalize()
-    filtered_data = data[data['Possibility'] >= 14.9]
+
+    filtered_data = data[data['Possibility'] >= 16]
     
-    sorted_data = filtered_data.sort_values('Possibility', ascending=False)
+    # Crear una copia explícita del DataFrame
+    data_copy = filtered_data.copy()
+        
+    # Agregar una columna "Image URL" a la copia
+    data_copy['Image URL'] = data_copy['Boss name'].str.replace(' ', '_', regex=True)
+    data_copy['Image URL'] = "https://guildstats.eu/images/bosses/" + data_copy['Image URL'] + ".gif"
+    # Agregar una columna "wiki" a la copia
+    data_copy['wiki URL'] = "https://tibia.fandom.com/wiki/" + data_copy['Boss name']
+    data_copy['wiki URL'] = data_copy['wiki URL'].str.replace(' ', '_', regex=True)
+    
+    # Modificar la columna "Boss name" en la copia
+    #data_copy.loc[:, 'Boss name'] = data_copy['Boss name'].str.capitalize()
+        
+    sorted_data = data_copy.sort_values('Possibility', ascending=False)
 
     return sorted_data
-
     
-@slash_command(name="rare_boss", description="probability rare bosses of the day")
+@slash_command(name="rare_bosses", description="Probability of rare bosses of the day")
 async def boss_command(ctx: SlashContext):
+    # Obtener los datos filtrados
     filtered_data = rare_bosses()
 
-    embed = Embed(title="Probability rare bosses of the day", 
-                color=0x6a93d5)
-
+    # Enviar un embed para cada jefe
     for _, row in filtered_data.iterrows():
         boss_name = row['Boss name']
         possibility = row['Possibility']
-        embed.add_field(name=boss_name, value=f"Chance: **{possibility}%**", inline=False)
-        
-    await ctx.send(embed=embed)
+        image_url = row['Image URL']
+        wiki_url = row['wiki URL']
+
+        # Crear un embed para el jefe actual
+        embed = Embed(title=boss_name, description=f"Probability: {possibility}%", color=random.randint(0, 0xFFFFFF), url=wiki_url)
+        embed.set_thumbnail(url=image_url)
+
+        await ctx.send(embed=embed)
 
 
 @listen()  # this decorator tells snek that it needs to listen for the corresponding event, and run this coroutine

@@ -7,7 +7,7 @@ import requests
 def rare_bosses():
     selected_server = "Solidera"
     guild_url = f"https://guildstats.eu/bosses?world={selected_server}&monsterName=&bossType=&rook=0"
-    not_wanted = ['Apprentice Sheng', 'Munster', 'Teleskor', 'Rottie the Rotworm', 'draptors', 'undead cavebears']
+    not_wanted = ['Apprentice Sheng', 'Munster', 'Teleskor', 'Rottie the Rotworm', 'draptors', 'undead cavebears', 'midnight panthers']
     boss_name = 'man in the cave'
 
     response = requests.get(guild_url)
@@ -43,15 +43,13 @@ def rare_bosses():
     # Agregar una columna "wiki" a la copia
     data_copy['wiki URL'] = "https://tibia.fandom.com/wiki/" + data_copy['Boss name']
     data_copy['wiki URL'] = data_copy['wiki URL'].str.replace(' ', '_', regex=True)
-        
-    # Modificar la columna "Boss name" en la copia
-    data_copy.loc[:, 'Boss name'] = data_copy['Boss name'].str.capitalize()
-    data_copy.loc[:, 'wiki URL'] = data_copy['wiki URL'].str.lower()
     
+    # Modificar la columna "Boss name" en la copia
+    #data_copy.loc[:, 'Boss name'] = data_copy['Boss name'].str.capitalize()
+        
     sorted_data = data_copy.sort_values('Possibility', ascending=False)
 
     return sorted_data
 
 print(rare_bosses())
-
-#rare_bosses().to_excel('rare_bosses2.xlsx', index=False)
+rare_bosses().to_excel('rare_bosses2.xlsx', index=False)
