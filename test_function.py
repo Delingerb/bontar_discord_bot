@@ -1,57 +1,33 @@
-import requests
-from bs4 import BeautifulSoup
-import pandas as pd
-import requests
+def stamina_calculator(current_stamina_str, desired_stamina_str):
+    def minutes_to_hhmm(minutes):
+        days = minutes // 1440
+        hours = (minutes % 1440) // 60
+        minutes = minutes % 60
 
+        if days > 0:
+            return f"{days} día(s) {hours:02d}:{minutes:02d}"
+        else:
+            return f"{hours:02d}:{minutes:02d}"
 
-def rare_bosses():
-    selected_server = "Solidera"
-    guild_url = f"https://guildstats.eu/bosses?world={selected_server}&monsterName=&bossType=&rook=0"
-    not_wanted = ['Apprentice Sheng', 'Munster', 'Teleskor', 'Rottie the Rotworm', 'draptors', 'undead cavebears']
-    boss_name = 'man in the cave'
+    def hhmm_to_minutes(time_str):
+        hours, minutes = map(int, time_str.split(':'))
+        return hours * 60 + minutes
 
-    response = requests.get(guild_url)
-    html_content = response.text
+    regen_point_str = "39:00"  # Hora verde en formato hh:mm
+    regen_point = hhmm_to_minutes(regen_point_str)
 
-    soup = BeautifulSoup(html_content, "html.parser")
-    table = soup.find("table", id="myTable")
+    current_stamina = hhmm_to_minutes(current_stamina_str)
+    desired_stamina = hhmm_to_minutes(desired_stamina_str)
 
-    img_tag = soup.find("img", alt=boss_name)
-    if img_tag:
-        img_src = img_tag.get("src")
-        img_url = f"https://guildstats.eu/{img_src}"
+    # Calcular el tiempo de regeneración
+    if desired_stamina <= regen_point:
+        time_to_regen = (regen_point - current_stamina) * 3 + 10
     else:
-        return f"No se encontró la imagen para el boss {boss_name}"
-
-    data = pd.read_html(str(table))[0]
-    data.columns = data.columns.droplevel(0)
-    data = data.drop(['Type', 'Introduced', 'Expected in', 'Killed bosses', 'Killed players', 'Last seen', '#', 'Image'], axis=1)
-    data = data[~data['Boss name'].isin(not_wanted)]
-    pattern = r'^\d+(\.\d+)?%'
-    data = data[data['Possibility'].str.extract(pattern, expand=False).notnull()]
-    data['Possibility'] = data['Possibility'].str.rstrip('%')
-    data['Possibility'] = data['Possibility'].astype('float64')
-
-    filtered_data = data[data['Possibility'] >= 16]
+        time_to_regen = (regen_point - current_stamina) * 3 + (desired_stamina - regen_point) * 6 + 10
     
-    # Crear una copia explícita del DataFrame
-    data_copy = filtered_data.copy()
-        
-    # Agregar una columna "Image URL" a la copia
-    data_copy['Image URL'] = data_copy['Boss name'].str.replace(' ', '_', regex=True)
-    data_copy['Image URL'] = "https://guildstats.eu/images/bosses/" + data_copy['Image URL'] + ".gif"
-    # Agregar una columna "wiki" a la copia
-    data_copy['wiki URL'] = "https://tibia.fandom.com/wiki/" + data_copy['Boss name']
-    data_copy['wiki URL'] = data_copy['wiki URL'].str.replace(' ', '_', regex=True)
-        
-    # Modificar la columna "Boss name" en la copia
-    data_copy.loc[:, 'Boss name'] = data_copy['Boss name'].str.capitalize()
-    data_copy.loc[:, 'wiki URL'] = data_copy['wiki URL'].str.lower()
-    
-    sorted_data = data_copy.sort_values('Possibility', ascending=False)
+    time_to_regen_formatted = minutes_to_hhmm(time_to_regen)
+    return time_to_regen_formatted
 
-    return sorted_data
-
-print(rare_bosses())
-
-#rare_bosses().to_excel('rare_bosses2.xlsx', index=False)
+# Ejemplo de uso
+result = stamina_calculator("39:00", "42:00")
+print("Tiempo de regeneración:", result)

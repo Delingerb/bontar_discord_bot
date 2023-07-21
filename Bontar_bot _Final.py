@@ -1,12 +1,14 @@
 import math
 import pytz
-from pytz import utc
-import requests
 import random
+import requests
 import pandas as pd
+from pytz import utc
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
-from interactions import Client, Intents, listen,Embed, slash_command, SlashContext, slash_option, OptionType, Task, TimeTrigger
+from interactions import Client, Intents, listen, Embed, slash_command, SlashContext, slash_option, OptionType, Task, TimeTrigger
+from interactions import SlashCommandOption
+from interactions.ext.paginators import Paginator
 
 bot = Client(intents=Intents.DEFAULT)
 public_channel_id = 793316701155885056  # Buntar_public
@@ -93,7 +95,7 @@ next_drome = f"{days} days {remaining_hours:02d}:{remaining_minutes:02d}"
 # TIBIADROME /
 
 ## SERVER_INFO
-def get_worlds():
+async def get_worlds():
     url = 'https://api.tibiadata.com/v3/worlds'
     response = requests.get(url)
 
@@ -143,11 +145,6 @@ def party_share(user_level):
     return message
 ##PARTY_SHARE/
 
-
-
-
-
-
 @slash_command(name="hello", description="My first command :)")
 async def hello_test(ctx: SlashContext):
     await ctx.send("Hello, how are you?")
@@ -155,39 +152,46 @@ async def hello_test(ctx: SlashContext):
 @slash_command(name="boss", description="Boss Boosted of the day.")
 async def boss(ctx: SlashContext):
     embed = Embed(title=boss_name,
-                  url="https://tibia.fandom.com/wiki/" + boss_name.replace(" ", "_"),
+                url="https://tibia.fandom.com/wiki/" + boss_name.replace(" ", "_"),
                   description="**Health**: " + hp_value + "\n" + " **Experience**: " + exp_value,
-                  color="#ffffff")
+                color="#ffffff")
     embed.set_thumbnail(url=boss_img)
     embed.set_footer(text="Next server save in " + serversave_time + ".")
     await ctx.send(embed=embed)
 
+##serversave
 @slash_command(name="ss", description="Next server save")
 async def toservers(ctx: SlashContext):
     await ctx.send("Time remaining for the next server save: " + serversave_time + ".")
+##serversave
 
+##DROME
 @slash_command(name="drome", description="Tibiadrome Rotation")
 async def tibiadrome(ctx: SlashContext):
     embed = Embed(title="Tibia Drome",
-                  url="https://tibia.fandom.com/wiki/Tibiadrome#Rewards",
-                  description="**NEXT**:\nNext rotation in " + next_drome + ".\n**Reward**:\nSpecial potions, Mount and Outfit points.",
-                  color="#ffffff")
+                url="https://tibia.fandom.com/wiki/Tibiadrome#Rewards",
+                description="**NEXT**:\nNext rotation in " + next_drome + ".\n**Reward**:\nSpecial potions, Mount and Outfit points.",
+                color="#ffffff")
     embed.set_thumbnail(url="https://static.wikia.nocookie.net/tibia/images/f/f9/Outfit_Lion_of_War_Female_Addon_3.gif/revision/latest?cb=20190522035213&path-prefix=en&format=original")
     await ctx.send(embed=embed)
+##DROME
 
+##TEAMTIME
 @slash_command(name="hours", description="Team Schedule")
 async def hours(ctx: SlashContext):
     embed = Embed(title="Team Schedule",
-                  description="**Schedules:**\n" +
-                              "Madrid: " + spain_time + "\n" +
-                              "Argentina/Brazil: " + argentina_time + "\n" +
-                              "Santiago/Darki/Vzla: " + chile_time + "\n" +
-                              "Peru/Ecuador/Colombia/Victor: " + ecuador_time + "\n" +
-                              "Gonzalo: " + mexico_time,
-                  color="#ffffff")
+                description="**Schedules:**\n" +
+                            "Madrid: " + spain_time + "\n" +
+                            "Argentina/Brazil: " + argentina_time + "\n" +
+                            "Santiago/Darki/Vzla: " + chile_time + "\n" +
+                            "Peru/Ecuador/Colombia/Victor: " + ecuador_time + "\n" +
+                            "Gonzalo: " + mexico_time,
+                color="#ffffff")
     embed.set_thumbnail(url="https://cdn.discordapp.com/attachments/745374445668925591/1128011098596053104/f.elconfidencial.com_original_a39_499_f1e_a39499f1e51ddf3af7fc8b4a0756195a.jpg")
     await ctx.send(embed=embed)
+##TEAMTIME
 
+##TOLVL
 @slash_command(name="world", description="Server Info")
 @slash_option(
     name="server_opt",
@@ -197,7 +201,6 @@ async def hours(ctx: SlashContext):
 )
 async def world_info(ctx: SlashContext, server_opt: str):
     server_opt_capitalized = server_opt.capitalize()  # Convert the first letter to uppercase
-
     world_info = get_world_info(server_opt_capitalized)
 
     if world_info and world_info.get('name') == server_opt_capitalized:
@@ -210,9 +213,9 @@ async def world_info(ctx: SlashContext, server_opt: str):
         await ctx.send(f"World Name: **{name}**\nType: {pvp_type}\nStatus: {status}\nLocation: {location}\nPlayers online: {players_online}")
     else:
         await ctx.send(f"**Wrong server name '{server_opt_capitalized}'.**")
+##serverinfo
 
-
-
+##TOLVL
 @slash_command(name="tolvl", description="Experience required for desired level")
 @slash_option(
     name="current_lvl",
@@ -227,15 +230,14 @@ async def world_info(ctx: SlashContext, server_opt: str):
     opt_type=OptionType.INTEGER
 )
 async def to_lvl_function(ctx: SlashContext, current_lvl: int, desired_lvl: int):
-    
     if current_lvl >= desired_lvl:
         await ctx.send("**Warning:** The current level must be lower than the desired level.")
-    
     else:
         exp_required = calculate_exp(current_lvl, desired_lvl)    
         await ctx.send(exp_required)
-    
+##TOLVL
 
+##SHARE
 @slash_command(name="share", description="Party Share")
 @slash_option(
     name="level",
@@ -244,21 +246,20 @@ async def to_lvl_function(ctx: SlashContext, current_lvl: int, desired_lvl: int)
     opt_type=OptionType.INTEGER
 )
 async def share_lvl_function(ctx: SlashContext, level: int):
-    
         party_result = party_share(level)    
         await ctx.send(party_result)
+##SHARE
 
-
+##RASHID
 def rashid_message():
     day_of_week = datetime.now().strftime("%A")
-
-    rashid_monday = f"On Mondays you can find him in **Svargrond**\n in Dankwart's tavern, south of the temple."
-    rashid_tuesday = f"On Tuesdays you can find him in **Liberty Bay**\n in Lyonel's tavern, west of the depot."
-    rashid_wednesday = f"On Wednesdays you can find him in **Port Hope**\n in Clyde's tavern, west of the depot."
-    rashid_thursday = f"On Thursdays you can find him in **Ankrahmun**\n in Arito's tavern, above the post office."
-    rashid_friday = f"On Fridays you can find him in **Darashia**\n in Miraia's tavern, south of the guildhalls."
-    rashid_saturday = f"On Saturdays you can find him in **Edron**\n in Mirabell's tavern, above the depot."
-    rashid_sunday = f"On Sundays you can find him in **Carlin** depot\n one floor above."
+    rashid_monday = f"On Mondays you can find him in Svargrond\n in Dankwart's tavern, south of the temple."
+    rashid_tuesday = f"On Tuesdays you can find him in Liberty Bay\n in Lyonel's tavern, west of the depot."
+    rashid_wednesday = f"On Wednesdays you can find him in Port Hope\n in Clyde's tavern, west of the depot."
+    rashid_thursday = f"On Thursdays you can find him in Ankrahmun\n in Arito's tavern, above the post office."
+    rashid_friday = f"On Fridays you can find him in Darashia,\n in Miraia's tavern, south of the guildhalls."
+    rashid_saturday = f"On Saturdays you can find him in Edron\n in Mirabell's tavern, above the depot."
+    rashid_sunday = f"On Sundays you can find him in Carlin depot\n one floor above."
 
     if day_of_week == "Monday":
         return rashid_monday
@@ -277,87 +278,244 @@ def rashid_message():
     else:
         return "Invalid day. Please provide a valid day of the week."
 
-
-@Task.create(TimeTrigger(hour=10, minute=0, utc=False))
+@Task.create(TimeTrigger(hour=6, minute=0))
 async def midnight():
+    rashid_msg = rashid_message()
     global public_channel_id
-    channel = bot.get_channel(public_channel_id)  # Get the TextChannel object
-    
-    rashid_day = rashid_message()
-
+    channel = bot.get_channel(public_channel_id) # Obtiene el objeto TextChannel
     embed = Embed(title="Rashid",
                 url="https://tibia.fandom.com/wiki/Rashid",
-                description=rashid_day,
-                color="#00FF00") #green
-    embed.set_thumbnail(url="https://tibiapal.com/images/Rashid.gif")
+                description=rashid_msg,
+                color="#00FF00") #verde
+    embed.set_thumbnail(url= "https://tibiapal.com/images/Rashid.gif")
+    embed.set_image(url="https://cdn.discordapp.com/attachments/743530360780095700/1131302185158852618/Rashid-map.png")
     await channel.send(embed=embed)
-    print("It's midnight!")
+    
 
+@slash_command(name="rashid", description="Where is Rashid?")
+async def rashid(ctx: SlashContext):
+    rashid_msg = rashid_message()
+    embed = Embed(title="Rashid",
+                url="https://tibia.fandom.com/wiki/Rashid",
+                description=rashid_msg,
+                color="#00FF00") #verde
+    embed.set_thumbnail(url= "https://tibiapal.com/images/Rashid.gif")
+    embed.set_image(url="https://cdn.discordapp.com/attachments/743530360780095700/1131302185158852618/Rashid-map.png")
+    await ctx.send(embed=embed)
+    ##RASHID//
 
+##BOSSES RAROS
 def rare_bosses():
     selected_server = "Solidera"
     guild_url = f"https://guildstats.eu/bosses?world={selected_server}&monsterName=&bossType=&rook=0"
-    not_wanted = ['Apprentice Sheng', 'Munster', 'Teleskor', 'Rottie the Rotworm', 'draptors', 'undead cavebears', 'midnight panthers']
-    boss_name = 'man in the cave'
+    not_wanted = ['Apprentice Sheng', 'Munster', 'Teleskor', 'Rottie the Rotworm', 'draptors', 
+                'undead cavebears', 'midnight panthers', 'Zomba', 'Willi Wasp', 'Grand Mother Foulscale', 'The Blightfather']
 
     response = requests.get(guild_url)
     html_content = response.text
-
     soup = BeautifulSoup(html_content, "html.parser")
     table = soup.find("table", id="myTable")
-
-    img_tag = soup.find("img", alt=boss_name)
-    if img_tag:
-        img_src = img_tag.get("src")
-        img_url = f"https://guildstats.eu/{img_src}"
-    else:
-        return f"No se encontró la imagen para el boss {boss_name}"
-
     data = pd.read_html(str(table))[0]
     data.columns = data.columns.droplevel(0)
-    data = data.drop(['Type', 'Introduced', 'Expected in', 'Killed bosses', 'Killed players', 'Last seen', '#', 'Image'], axis=1)
+    data = data.drop(['Type', 'Introduced', 'Expected in', 'Killed bosses', 'Killed players', '#', 'Image'], axis=1)
     data = data[~data['Boss name'].isin(not_wanted)]
     pattern = r'^\d+(\.\d+)?%'
     data = data[data['Possibility'].str.extract(pattern, expand=False).notnull()]
     data['Possibility'] = data['Possibility'].str.rstrip('%')
     data['Possibility'] = data['Possibility'].astype('float64')
 
-    filtered_data = data[data['Possibility'] >= 16]
+    filtered_data = data[data['Possibility'] >= 10]
     
     # Crear una copia explícita del DataFrame
     data_copy = filtered_data.copy()
-        
-    # Agregar una columna "Image URL" a la copia
-    data_copy['Image URL'] = data_copy['Boss name'].str.replace(' ', '_', regex=True)
-    data_copy['Image URL'] = "https://guildstats.eu/images/bosses/" + data_copy['Image URL'] + ".gif"
+    
+    bosses_to_edit = ['yetis']  # Lista de nombres de los bosses a editar
+    new_names = ['Yeti']  # Lista de nuevos nombres correspondientes a los bosses
+    
+    for boss, new_name in zip(bosses_to_edit, new_names):
+        data_copy.loc[data_copy['Boss name'] == boss, 'Boss name'] = new_name
+    
     # Agregar una columna "wiki" a la copia
     data_copy['wiki URL'] = "https://tibia.fandom.com/wiki/" + data_copy['Boss name']
     data_copy['wiki URL'] = data_copy['wiki URL'].str.replace(' ', '_', regex=True)
     
-    # Modificar la columna "Boss name" en la copia
-    #data_copy.loc[:, 'Boss name'] = data_copy['Boss name'].str.capitalize()
-        
-    sorted_data = data_copy.sort_values('Possibility', ascending=False)
-
-    return sorted_data
+        # Agregar una columna "Image URL" a la copia
+    data_copy['Image URL'] = "https://guildstats.eu/images/bosses/" + data_copy['Boss name'] + ".gif"
+    data_copy['Image URL'] = data_copy['Image URL'].str.replace(' ', '_', regex=True)
     
+    bosses_adjust_url = ['Yeti', 'Dharalion', 'Hairman The Huge', 'The Voice Of Ruin','Yaga The Crone']
+    new_urls = ['https://www.tibiabosses.com/wp-content/uploads/2016/04/yeti.gif',
+                'https://cdn.discordapp.com/attachments/1130606814061408354/1131524735793102920/Dharalion.gif',
+                'https://cdn.discordapp.com/attachments/1130606814061408354/1131527491517960343/Hairman_the_Huge.gif',
+                'https://cdn.discordapp.com/attachments/1130606814061408354/1131527861409435738/The_Voice_of_Ruin.gif',
+                'https://cdn.discordapp.com/attachments/1130606814061408354/1131899098748944445/Yaga_the_Crone.gif']  # Lista de nuevas URLs correspondientes a los bosses
+    for boss, new_url in zip(bosses_adjust_url, new_urls):
+        data_copy.loc[data_copy['Boss name'] == boss, 'Image URL'] = new_url
+
+    #data_copy.loc[:, 'Boss name'] = data_copy['Boss name'].str.capitalize()
+    sorted_data = data_copy.sort_values('Possibility', ascending=False)
+    return sorted_data
+
 @slash_command(name="rare_bosses", description="Probability of rare bosses of the day")
 async def boss_command(ctx: SlashContext):
     # Obtener los datos filtrados
     filtered_data = rare_bosses()
 
-    # Enviar un embed para cada jefe
+    boss_messages = []
     for _, row in filtered_data.iterrows():
         boss_name = row['Boss name']
         possibility = row['Possibility']
         image_url = row['Image URL']
         wiki_url = row['wiki URL']
+        last_date = row['Last seen']
 
         # Crear un embed para el jefe actual
-        embed = Embed(title=boss_name, description=f"Probability: {possibility}%", color=random.randint(0, 0xFFFFFF), url=wiki_url)
+        embed = Embed(title=boss_name, 
+                        description=f"Probability: **{possibility}%**\nThe boss was last seen {last_date}", 
+                        color=random.randint(0, 0xFFFFFF), 
+                        url=wiki_url)
         embed.set_thumbnail(url=image_url)
+        boss_messages.append(embed)
 
-        await ctx.send(embed=embed)
+    # Crear un paginador con la lista de mensajes y mostrarlo en Discord
+    paginator = Paginator.create_from_embeds(bot, *boss_messages, timeout=120)
+    await paginator.send(ctx)
+##RARE BOSSES
+
+
+####IMBUE/
+df = pd.read_excel('imbue_data.xlsx')
+wiki_base_url = "https://tibia.fandom.com/wiki/"
+wiki_icon="https://static.wikia.nocookie.net/tibia/images/6/6e/TibiaWiki.gif/revision/latest/thumbnail/width/360/height/360?cb=20150121085821&path-prefix=en"
+# Obtener los nombres del DataFrame en el orden requerido
+desired_order = ['Critical Hit', 'Mana Leech', 'Life Leech', 'Magic Level', 
+                'Capacity', 'Axe Fighting', 'Sword Fighting', 'Club Fighting', 
+                'Distance Fighting', 'Paralysis Deflection', 'Death Protection', 
+                'Earth Protection', 'Fire Protection', 'Ice Protection', 
+                'Energy Protection','Holy Protection', 'Fire Damage', 'Earth Damage', 
+                'Ice Damage', 'Energy Damage', 'Death Damage', 'Walking Speed', 'Shielding']
+sorted_names = sorted(df['Name'], key=lambda x: desired_order.index(x) if x in desired_order else len(desired_order))
+
+@slash_command(name="imbue", description="imbue options",
+    options=[
+        SlashCommandOption(
+            name="option",
+            description="Options",
+            required=True,
+            type=OptionType.STRING,
+            choices=[
+                {
+                    "name": name,
+                    "value": name
+                }
+                for name in sorted_names
+            ]
+        )
+    ]
+)
+
+async def imbue_function(ctx: SlashContext, option: str):
+    selected_data = df[df['Name'] == option]  # Filtrar los datos que coinciden con el imbue seleccionado
+    if not selected_data.empty:
+        # Iterar sobre las filas de los datos seleccionados
+        for _, row in selected_data.iterrows():
+            # Obtener los valores de cada columna para la fila actual
+            imbue_type = row['Name']
+            imbuement_name = row['Imbuement Name']
+            required_items = row['Required item']
+            required_items_list = required_items.split(', ')
+            frequired_items = "\n".join(required_items_list)
+            upgrade = row['Upgrade']
+            imbue_img = row['Image URL']
+            imbue_url = "https://tibia.fandom.com/wiki/"+imbuement_name.replace(' ', '_')
+            
+    embed = Embed(title=imbuement_name,
+                url=imbue_url,
+                color="#{:06x}".format(random.randint(0, 0xFFFFFF))
+                    )
+    embed.set_thumbnail(url=imbue_img)
+    embed.set_author(name="Tibia Wiki", url=wiki_base_url, icon_url=wiki_icon)
+    embed.add_field(name="Upgrade:", value=upgrade, inline=True)
+    embed.add_field(name="Required Item:", value=frequired_items, inline=True)
+    embed.set_footer("Imbuing is the action of temporarily boosting an equipment item using Astral Sources.")
+    await ctx.send(embed=embed)
+####IMBUE///
+
+#######STAMINA
+def stamina_calculator(current_stamina_str, desired_stamina_str):
+    def minutes_to_hhmm(minutes):
+        days = minutes // 1440
+        hours = (minutes % 1440) // 60
+        minutes = minutes % 60
+
+        if days > 0:
+            return f"{days} day(s) {hours:02d}:{minutes:02d}"
+        else:
+            return f"{hours:02d}:{minutes:02d}"
+
+    def hhmm_to_minutes(time_str):
+        hours, minutes = map(int, time_str.split(':'))
+        return hours * 60 + minutes
+
+    regen_point_str = "39:00"  # Hora verde en formato hh:mm
+    regen_point = hhmm_to_minutes(regen_point_str)
+
+    current_stamina = hhmm_to_minutes(current_stamina_str)
+    desired_stamina = hhmm_to_minutes(desired_stamina_str)
+
+    # Calcular el tiempo de regeneración
+    if desired_stamina <= regen_point:
+        time_to_regen = (regen_point - current_stamina) * 3 + 10
+    else:
+        time_to_regen = (regen_point - current_stamina) * 3 + (desired_stamina - regen_point) * 6 + 10
+    
+    time_to_regen_formatted = minutes_to_hhmm(time_to_regen)
+    return time_to_regen_formatted
+
+@slash_command(name="stamina", description="time required for desired level")
+@slash_option(
+    name="current_hour",
+    description="Stamina now",
+    required=True,
+    opt_type=OptionType.INTEGER,
+    min_value=0,
+    max_value=41
+    )
+@slash_option(
+    name="current_min",
+    description="Stamina now",
+    required=True,
+    opt_type=OptionType.INTEGER,
+    min_value=0,
+    max_value=59   
+    )
+@slash_option(
+    name="desired_hour",
+    description="Desired Stamina",
+    required=True,
+    opt_type=OptionType.INTEGER,
+    min_value=1,
+    max_value=42
+    )
+@slash_option(
+    name="desired_min",
+    description="Desired Stamina",
+    required=True,
+    opt_type=OptionType.INTEGER,
+    min_value=0,
+    max_value=59
+    )
+async def stamina(ctx: SlashContext, current_hour: int, current_min: int, desired_hour: int, desired_min: int):
+    if ((current_hour * 60) + current_min) >= ((desired_hour * 60) + desired_min):
+        await ctx.send("**Warning:** The current stamina must be lower than the desired level.")
+    elif ((desired_hour * 60) + desired_min) > 2520:
+        await ctx.send("**Warning:** stamina cannot be greater than 42:00")
+    else:
+        waiting_time = stamina_calculator(f"{current_hour}:{current_min}", f"{desired_hour}:{desired_min}")
+        current_stamina = f"{current_hour:02d}:{current_min:02d}"
+        desired_stamina = f"{desired_hour:02d}:{desired_min:02d}"
+        await ctx.send(f"From **{current_stamina}** to  **{desired_stamina}**\nYou need to be offline **{waiting_time}**12.")
+#######STAMINA
 
 
 @listen()  # this decorator tells snek that it needs to listen for the corresponding event, and run this coroutine

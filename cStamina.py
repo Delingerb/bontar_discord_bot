@@ -28,7 +28,7 @@ def stamina_calculator(current_stamina_str, desired_stamina_str):
         minutes = minutes % 60
 
         if days > 0:
-            return f"{days} día(s) {hours:02d}:{minutes:02d}"
+            return f"{days} day(s) {hours:02d}:{minutes:02d}"
         else:
             return f"{hours:02d}:{minutes:02d}"
 
@@ -95,7 +95,7 @@ async def stamina(ctx: SlashContext, current_hour: int, current_min: int, desire
         waiting_time = stamina_calculator(f"{current_hour}:{current_min}", f"{desired_hour}:{desired_min}")
         current_stamina = f"{current_hour:02d}:{current_min:02d}"
         desired_stamina = f"{desired_hour:02d}:{desired_min:02d}"
-        await ctx.send(f"from {current_stamina} to  {desired_stamina} you must wait {waiting_time}")
+        await ctx.send(f"From **{current_stamina}** to  **{desired_stamina}**\nYou need to be offline **{waiting_time}**12.")
 
     
     

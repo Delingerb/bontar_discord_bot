@@ -4,102 +4,89 @@ from pytz import utc
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
-from interactions import Client, Intents, listen,Embed, slash_command, SlashContext, slash_option, OptionType, Task, TimeTrigger
+from interactions import Client, Intents, listen, Embed, slash_command, SlashContext, slash_option, OptionType, Task, TimeTrigger
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 import random
-
+from interactions import SlashCommandOption, SlashCommandChoice
+import re
 
 bot = Client(intents=Intents.DEFAULT)
 # intents are what events we want to receive from discord, `DEFAULT` is usually fine
 
-api = "https://docs.tibiadata.com/"
-
-@slash_command(name="hello_alfa", description="My first command :)")
+@slash_command(name="hello_test", description="My first command :)")
 async def hello_test(ctx: SlashContext):
     await ctx.send("Hello, how are you?")
+    
+#############################
 
-#TESTING
+def stamina_calculator(current_stamina_str, desired_stamina_str):
+    def minutes_to_hhmm(minutes):
+        days = minutes // 1440
+        hours = (minutes % 1440) // 60
+        minutes = minutes % 60
 
+        if days > 0:
+            return f"{days} día(s) {hours:02d}:{minutes:02d}"
+        else:
+            return f"{hours:02d}:{minutes:02d}"
 
-selected_server = "Solidera"
-guild_url = f"https://guildstats.eu/bosses?world={selected_server}&monsterName=&bossType=&rook=0"
-not_wanted = ['Apprentice Sheng', 'Munster', 'Teleskor', 'Rottie the Rotworm', 'draptors', 'undead cavebears']
+    def hhmm_to_minutes(time_str):
+        hours, minutes = map(int, time_str.split(':'))
+        return hours * 60 + minutes
 
-response = requests.get(guild_url)
-html_content = response.text
+    regen_point_str = "39:00"  # Hora verde en formato hh:mm
+    regen_point = hhmm_to_minutes(regen_point_str)
 
-soup = BeautifulSoup(html_content, "html.parser")
-table = soup.find("table", id="myTable")
+    current_stamina = hhmm_to_minutes(current_stamina_str)
+    desired_stamina = hhmm_to_minutes(desired_stamina_str)
 
-
-def rare_bosses():
-    selected_server = "Solidera"
-    guild_url = f"https://guildstats.eu/bosses?world={selected_server}&monsterName=&bossType=&rook=0"
-    not_wanted = ['Apprentice Sheng', 'Munster', 'Teleskor', 'Rottie the Rotworm', 'draptors', 'undead cavebears', 'midnight panthers']
-    boss_name = 'man in the cave'
-
-    response = requests.get(guild_url)
-    html_content = response.text
-
-    soup = BeautifulSoup(html_content, "html.parser")
-    table = soup.find("table", id="myTable")
-
-    img_tag = soup.find("img", alt=boss_name)
-    if img_tag:
-        img_src = img_tag.get("src")
-        img_url = f"https://guildstats.eu/{img_src}"
+    # Calcular el tiempo de regeneración
+    if desired_stamina <= regen_point:
+        time_to_regen = (regen_point - current_stamina) * 3 + 10
     else:
-        return f"No se encontró la imagen para el boss {boss_name}"
-
-    data = pd.read_html(str(table))[0]
-    data.columns = data.columns.droplevel(0)
-    data = data.drop(['Type', 'Introduced', 'Expected in', 'Killed bosses', 'Killed players', 'Last seen', '#', 'Image'], axis=1)
-    data = data[~data['Boss name'].isin(not_wanted)]
-    pattern = r'^\d+(\.\d+)?%'
-    data = data[data['Possibility'].str.extract(pattern, expand=False).notnull()]
-    data['Possibility'] = data['Possibility'].str.rstrip('%')
-    data['Possibility'] = data['Possibility'].astype('float64')
-
-    filtered_data = data[data['Possibility'] >= 16]
+        time_to_regen = (regen_point - current_stamina) * 3 + (desired_stamina - regen_point) * 6 + 10
     
-    # Crear una copia explícita del DataFrame
-    data_copy = filtered_data.copy()
-        
-    # Agregar una columna "Image URL" a la copia
-    data_copy['Image URL'] = data_copy['Boss name'].str.replace(' ', '_', regex=True)
-    data_copy['Image URL'] = "https://guildstats.eu/images/bosses/" + data_copy['Image URL'] + ".gif"
-    # Agregar una columna "wiki" a la copia
-    data_copy['wiki URL'] = "https://tibia.fandom.com/wiki/" + data_copy['Boss name']
-    data_copy['wiki URL'] = data_copy['wiki URL'].str.replace(' ', '_', regex=True)
+    time_to_regen_formatted = minutes_to_hhmm(time_to_regen)
+    return time_to_regen_formatted
+
+
+
+@slash_command(name="stamina", description="time required for desired level")
+@slash_option(
+    name="current_hour",
+    description="Stamina now",
+    required=True,
+    opt_type=OptionType.STRING
+)
+@slash_option(
+    name="current_min",
+    description="Stamina now",
+    required=True,
+    opt_type=OptionType.STRING
+)
+@slash_option(
+    name="desired_hour",
+    description="Desired Stamina",
+    required=True,
+    opt_type=OptionType.STRING
+)
+@slash_option(
+    name="desired_min",
+    description="Desired Stamina",
+    required=True,
+    opt_type=OptionType.STRING
+)
+async def stamina(ctx: SlashContext, current_hour: int, current_min: int, desired_hour: int, desired_min: int):
+    if ((current_hour*60)+current_min) >= ((desired_hour*60)+desired_min):
+        await ctx.send("**Warning:** The current stamina must be lower than the desired level.")
+    else:
+        waiting_time = stamina_calculator(f"{current_hour}:{current_min}", f"{desired_hour}:{desired_min}")    
+        await ctx.send(waiting_time)
     
-    # Modificar la columna "Boss name" en la copia
-    #data_copy.loc[:, 'Boss name'] = data_copy['Boss name'].str.capitalize()
-        
-    sorted_data = data_copy.sort_values('Possibility', ascending=False)
-
-    return sorted_data
     
-@slash_command(name="rare_boss", description="Probability of rare bosses of the day")
-async def boss_command(ctx: SlashContext):
-    # Obtener los datos filtrados
-    filtered_data = rare_bosses()
-
-    # Enviar un embed para cada jefe
-    for _, row in filtered_data.iterrows():
-        boss_name = row['Boss name']
-        possibility = row['Possibility']
-        image_url = row['Image URL']
-        wiki_url = row['wiki URL']
-
-        # Crear un embed para el jefe actual
-        embed = Embed(title=boss_name, description=f"Probability: {possibility}%", color=random.randint(0, 0xFFFFFF), url=wiki_url)
-        embed.set_thumbnail(url=image_url)
-
-        await ctx.send(embed=embed)
-
-
+#############################
 
 @listen()  # this decorator tells snek that it needs to listen for the corresponding event, and run this coroutine
 async def on_ready():

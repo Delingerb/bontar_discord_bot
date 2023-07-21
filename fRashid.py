@@ -38,21 +38,30 @@ def rashid_message():
         return "Invalid day. Please provide a valid day of the week."
 
 
-@Task.create(TimeTrigger(hour=11, minute=57))
+
+@Task.create(TimeTrigger(hour=18, minute=40))
 async def midnight():
     global id_channel_publico
-    channel = bot.get_channel(id_channel_publico)  # Obtiene el objeto TextChannel
-    
-    rashid_day = rashid_message()
-
+    channel = bot.get_channel(id_channel_publico) # Obtiene el objeto TextChannel
     embed = Embed(title="Rashid",
                 url="https://tibia.fandom.com/wiki/Rashid",
-                description=rashid_day,
+                description=rashid_msg,
                 color="#00FF00") #verde
     embed.set_thumbnail(url= "https://tibiapal.com/images/Rashid.gif")
+    embed.set_image(url="https://cdn.discordapp.com/attachments/743530360780095700/1131302185158852618/Rashid-map.png")
     await channel.send(embed=embed)
-    print("It's midnight!")
     
+
+@slash_command(name="rashid", description="Where is Rashid?")
+async def rashid(ctx: SlashContext):
+    rashid_msg = rashid_message()
+    embed = Embed(title="Rashid",
+                url="https://tibia.fandom.com/wiki/Rashid",
+                description=rashid_msg,
+                color="#00FF00") #verde
+    embed.set_thumbnail(url= "https://tibiapal.com/images/Rashid.gif")
+    embed.set_image(url="https://cdn.discordapp.com/attachments/743530360780095700/1131302185158852618/Rashid-map.png")
+    await ctx.send(embed=embed)
 
 @listen()
 async def on_ready():
